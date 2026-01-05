@@ -93,7 +93,7 @@ public class MyAmazingBot implements LongPollingSingleThreadUpdateConsumer {
                     for (Flight f : data.ac) {
                         String callsign = (f.flight != null) ? f.flight.trim() : "N/A";
                         String route = getFlightRouteSummary(callsign);
-                        sb.append("•`").append(callsign).append("`: ").append(route).append("\n");
+                        sb.append("• `").append(callsign).append("`: ").append(route).append("\n");
                     }
                     sendText(chatId, sb.toString());
                 }
