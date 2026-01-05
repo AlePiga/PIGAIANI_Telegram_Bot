@@ -94,7 +94,6 @@ public class MyAmazingBot implements LongPollingSingleThreadUpdateConsumer {
                     }
 
                     StringBuilder sb = new StringBuilder("*✈️ VOLI INTORNO A " + luogo.toUpperCase() + "*\n");
-
                     for (Flight f : data.ac) {
                         String callsign = (f.flight != null) ? f.flight.trim() : "N/A";
                         String route = getFlightRouteSummary(callsign);
