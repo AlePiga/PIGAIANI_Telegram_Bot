@@ -176,7 +176,6 @@ public class MyAmazingBot implements LongPollingSingleThreadUpdateConsumer {
             String hex = null;
             JsonObject liveData = null;
 
-            // Estraiamo il primo aereo dall'array "ac"
 //            if (radarJson.has("ac") && radarJson.get("ac").isJsonArray()) {
                 JsonArray acArray = radarJson.getAsJsonArray("ac");
                 if (!acArray.isEmpty()) {
@@ -185,7 +184,6 @@ public class MyAmazingBot implements LongPollingSingleThreadUpdateConsumer {
                 }
 //            }
 
-            // --- 2) Recupero dati DATABASE (Fallback o arricchimento) ---
             String urlDb = (hex != null)
                     ? "https://api.adsbdb.com/v0/aircraft/" + hex + "?callsign=" + callsignInput
                     : "https://api.adsbdb.com/v0/callsign/" + callsignInput;
@@ -195,9 +193,6 @@ public class MyAmazingBot implements LongPollingSingleThreadUpdateConsumer {
             StringBuilder sb = new StringBuilder();
             String photoUrl = null;
 
-            // ===========================
-            //   SEZIONE AEROMOBILE (da ADSBDB)
-            // ===========================
             if (rootDb.has("response") && !rootDb.get("response").isJsonNull()) {
                 JsonObject resp = rootDb.getAsJsonObject("response");
 
@@ -251,7 +246,6 @@ public class MyAmazingBot implements LongPollingSingleThreadUpdateConsumer {
                 sb.append("• Latitudine: ").append(liveData.get("lat").getAsFloat()).append("\n");
                 sb.append("• Longitudine: ").append(liveData.get("lon").getAsFloat()).append("\n");
 
-                // L'altitudine può essere "ground", quindi la gestiamo come stringa
                 String alt = liveData.get("alt_baro").isJsonPrimitive() ? liveData.get("alt_baro").getAsString() : "N/D";
                 sb.append("• Altitudine: ").append(alt).append(" ft\n");
 
@@ -323,14 +317,9 @@ public class MyAmazingBot implements LongPollingSingleThreadUpdateConsumer {
         try {
             String encodedLocation = URLEncoder.encode(location, StandardCharsets.UTF_8);
             String url = "https://nominatim.openstreetmap.org/search?q=" + encodedLocation + "&format=json&limit=1";
+            String responseBody = chiamataAPI(url);
 
-            HttpRequest request = HttpRequest.newBuilder()
-                    .uri(URI.create(url))
-                    .GET()
-                    .build();
-
-            HttpResponse<String> response = httpClient.send(request, HttpResponse.BodyHandlers.ofString());
-            JsonArray jsonArray = gson.fromJson(response.body(), JsonArray.class);
+            JsonArray jsonArray = gson.fromJson(responseBody, JsonArray.class);
 
             if (jsonArray != null && jsonArray.size() > 0) {
                 JsonObject firstResult = jsonArray.get(0).getAsJsonObject();
