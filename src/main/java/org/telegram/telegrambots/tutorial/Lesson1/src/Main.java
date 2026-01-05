@@ -10,7 +10,8 @@ public class Main {
         String botToken = "";
         System.out.println("Inserisci il token del bot: ");
         Scanner sc = new Scanner(System.in);
-        botToken = sc.nextLine(); // Momentaneamente...
+        botToken = sc.next(); // Momentaneamente...
+        sc.close();
         TelegramBotsLongPollingApplication botsApplication = new TelegramBotsLongPollingApplication();
         botsApplication.registerBot(botToken, new MyAmazingBot(botToken));
         System.out.println("Il bot è attivo!");
