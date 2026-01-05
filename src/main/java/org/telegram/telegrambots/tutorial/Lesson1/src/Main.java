@@ -7,13 +7,13 @@ import java.util.Scanner;
 
 public class Main {
     public static void main(String[] args) throws TelegramApiException {
-        String botToken = "";
-        System.out.println("Inserisci il token del bot: ");
-        Scanner sc = new Scanner(System.in);
-        botToken = sc.next(); // Momentaneamente...
-        sc.close();
+//        String botToken = "";
+//        System.out.println("Inserisci il token del bot: ");
+//        Scanner sc = new Scanner(System.in);
+//        botToken = sc.next(); // Momentaneamente...
+//        sc.close();
         TelegramBotsLongPollingApplication botsApplication = new TelegramBotsLongPollingApplication();
-        botsApplication.registerBot(botToken, new MyAmazingBot(botToken));
+        botsApplication.registerBot("8265336333:AAHjrFTDfbZRln0b0m1NFKvPGGuimgswXFs", new MyAmazingBot("8265336333:AAHjrFTDfbZRln0b0m1NFKvPGGuimgswXFs"));
         System.out.println("Il bot è attivo!");
     }
 }

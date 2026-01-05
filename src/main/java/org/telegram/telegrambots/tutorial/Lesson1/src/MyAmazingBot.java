@@ -17,6 +17,7 @@ import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
 import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
+import java.util.List;
 
 public class MyAmazingBot implements LongPollingSingleThreadUpdateConsumer {
 
@@ -62,15 +63,19 @@ public class MyAmazingBot implements LongPollingSingleThreadUpdateConsumer {
                     return;
                 }
 
-                if (raggio <= 0) {
-                    int raggioUtente = Integer.parseInt(text);
-                    if (raggioUtente < 0) {
-                        sendText(chatId, "❌ Inserisci un raggio valido!");
+                try {
+                    if (raggio <= 0) {
+                        int raggioUtente = Integer.parseInt(text);
+                        if (Double.isNaN(raggioUtente) || raggioUtente < 0) {
+                            sendText(chatId, "❌ Inserisci un raggio valido!");
+                            return;
+                        }
+                        raggio = raggioUtente;
+                        sendText(chatId, "*CONFIGURAZIONE COMPLETATA*\n" + "🗺️ Luogo: " + primaLetteraMaiuscola(luogo) + "\n" + "📏 Raggio: " + raggio + " km\n\n" + "Usa il comando /voli per tracciare gli aerei nella zona che hai selezionato! Per cambiare i parametri impostati puoi usare i comandi /luogo e /raggio, oppure /start per eseguire la configurazione da capo Buon divertimento!");
                         return;
                     }
-                    raggio = raggioUtente;
-                    sendText(chatId, "✅ Configurazione completata!\n\n" + "Luogo: " + primaLetteraMaiuscola(luogo) + "\n" + "Raggio: " + raggio + " km\n\n" + "Ora puoi usare il comando /voli per tracciare gli aerei che passano sopra di te! Per cambiare i parametri impostati puoi usare /start per eseguire la configurazione da capo, oppure /luogo <luogo> e /raggio <raggio>. Buon divertimento!");
-                    return;
+                } catch (NumberFormatException e) {
+                    sendText(chatId, "❌ Inserisci un numero valido per il raggio!");
                 }
 
                 if (text.startsWith("/voli")) {
@@ -160,6 +165,10 @@ public class MyAmazingBot implements LongPollingSingleThreadUpdateConsumer {
         }
     }
 
+    private boolean valid(JsonObject obj, String property) {
+        return obj != null && obj.has(property) && !obj.get(property).isJsonNull();
+    }
+
     private void cercaDettagliVolo(long chatId, String callsignInput) {
         callsignInput = callsignInput.trim().toUpperCase();
 
@@ -171,43 +180,39 @@ public class MyAmazingBot implements LongPollingSingleThreadUpdateConsumer {
         try {
             String radarUrl = "https://api.adsb.lol/v2/callsign/" + callsignInput;
             String rispostaRadar = chiamataAPI(radarUrl);
-            JsonObject radarJson = gson.fromJson(rispostaRadar, JsonObject.class);
+            Flightlist radarJson = gson.fromJson(rispostaRadar, Flightlist.class);
 
             String hex = null;
-            JsonObject liveData = null;
+            Flight liveData = null;
 
-//            if (radarJson.has("ac") && radarJson.get("ac").isJsonArray()) {
-                JsonArray acArray = radarJson.getAsJsonArray("ac");
-                if (!acArray.isEmpty()) {
-                    liveData = acArray.get(0).getAsJsonObject();
-                    hex = liveData.get("hex").getAsString();
-                }
-//            }
+            if (radarJson != null && radarJson.ac != null && !radarJson.ac.isEmpty()) {
+                liveData = radarJson.ac.get(0);
+                hex = liveData.hex;
+            }
 
             String urlDb = (hex != null)
                     ? "https://api.adsbdb.com/v0/aircraft/" + hex + "?callsign=" + callsignInput
                     : "https://api.adsbdb.com/v0/callsign/" + callsignInput;
 
-            JsonObject rootDb = gson.fromJson(chiamataAPI(urlDb), JsonObject.class);
+            String rispostaDb = chiamataAPI(urlDb);
+            JsonObject rootDb = gson.fromJson(rispostaDb, JsonObject.class); // Risposta dell'API in json invece che usare classe
 
-            StringBuilder sb = new StringBuilder();
-            String photoUrl = null;
+            StringBuilder mess = new StringBuilder();
+            String photoUrl = "";
 
-            if (rootDb.has("response") && !rootDb.get("response").isJsonNull()) {
+            if (valid(rootDb, "response")) {
                 JsonObject resp = rootDb.getAsJsonObject("response");
 
                 if (resp.has("aircraft") && !resp.get("aircraft").isJsonNull()) {
                     JsonObject ac = resp.getAsJsonObject("aircraft");
-                    sb.append("🛩 *DETTAGLI AEROMOBILE*\n");
-                    sb.append("• Modello: ").append(ac.get("manufacturer").getAsString()).append(" ")
-                            .append(ac.get("type").getAsString()).append(" (")
-                            .append(ac.get("icao_type").getAsString()).append(")\n");
+                    mess.append("🛩 *DETTAGLI AEROMOBILE*\n");
 
-                    sb.append("• Registrazione: `").append(ac.get("registration").getAsString()).append("` ")
-                            .append(emoji(ac.get("registered_owner_country_iso_name").getAsString())).append("\n");
+                    String man = ac.has("manufacturer") ? ac.get("manufacturer").getAsString() : "N/D";
+                    String type = ac.has("type") ? ac.get("type").getAsString() : "";
+                    mess.append("• Modello: ").append(man).append(" ").append(type).append("\n");
 
-                    sb.append("• Proprietario: ").append(ac.get("registered_owner").getAsString()).append("\n");
-                    sb.append("• Mode-S (HEX): `").append(ac.get("mode_s").getAsString()).append("`\n\n");
+                    mess.append("• Registrazione: `").append(ac.get("registration").getAsString()).append("`\n");
+                    mess.append("• Codice HEX: `").append(ac.get("mode_s").getAsString()).append("`\n\n");
 
                     if (ac.has("url_photo") && !ac.get("url_photo").isJsonNull()) {
                         photoUrl = ac.get("url_photo").getAsString();
@@ -216,60 +221,46 @@ public class MyAmazingBot implements LongPollingSingleThreadUpdateConsumer {
 
                 if (resp.has("flightroute") && !resp.get("flightroute").isJsonNull()) {
                     JsonObject fr = resp.getAsJsonObject("flightroute");
-                    sb.append("ℹ️ *INFORMAZIONI VOLO*\n");
+                    mess.append("ℹ️ *INFORMAZIONI VOLO*\n");
 
-                    if (fr.has("airline") && !fr.get("airline").isJsonNull()) {
-                        sb.append("• Compagnia: ").append(fr.getAsJsonObject("airline").get("name").getAsString()).append("\n");
-                    }
-                    if (fr.has("callsign_iata") && !fr.get("callsign_iata").isJsonNull()) {
-                        sb.append("• Callsign IATA: ").append(fr.get("callsign_iata").getAsString()).append("\n");
-                    }
                     if (fr.has("origin") && !fr.get("origin").isJsonNull()) {
                         JsonObject o = fr.getAsJsonObject("origin");
-                        sb.append("• Partenza: ").append(o.get("municipality").getAsString())
-                                .append(" (").append(o.get("iata_code").getAsString()).append(") ")
-                                .append(o.get("name").getAsString()).append("\n");
+                        mess.append("• Partenza: ").append(o.get("municipality").getAsString()).append(" (").append(o.get("iata_code").getAsString()).append(") ").append(o.get("name").getAsString()).append("\n");
                     }
                     if (fr.has("destination") && !fr.get("destination").isJsonNull()) {
                         JsonObject d = fr.getAsJsonObject("destination");
-                        sb.append("• Arrivo: ").append(d.get("municipality").getAsString())
-                                .append(" (").append(d.get("iata_code").getAsString()).append(") ")
-                                .append(d.get("name").getAsString()).append("\n");
+                        mess.append("• Arrivo: ").append(d.get("municipality").getAsString()).append(" (").append(d.get("iata_code").getAsString()).append(") ").append(d.get("name").getAsString()).append("\n");
                     }
-                    sb.append("\n");
+                    mess.append("\n");
                 }
             }
 
             if (liveData != null) {
-                sb.append("📡 *ALTRI DATI*\n");
-                sb.append("• Modello: ").append(liveData.has("t") ? liveData.get("t").getAsString() : "N/D").append("\n");
-                sb.append("• Latitudine: ").append(liveData.get("lat").getAsFloat()).append("\n");
-                sb.append("• Longitudine: ").append(liveData.get("lon").getAsFloat()).append("\n");
-
-                String alt = liveData.get("alt_baro").isJsonPrimitive() ? liveData.get("alt_baro").getAsString() : "N/D";
-                sb.append("• Altitudine: ").append(alt).append(" ft\n");
-
-                sb.append("• Velocità rispetto al suolo: ").append(liveData.has("gs") ? liveData.get("gs").getAsFloat() : 0).append(" kt\n");
-
-                String emergency = liveData.has("emergency") ? liveData.get("emergency").getAsString() : "none";
-                sb.append("• Stato emergenza: ").append(emergency.equals("none") ? "Nessuna" : "⚠️ " + emergency).append("\n");
-            } else if (sb.length() == 0) {
-                sendText(chatId, "❌ Dati non trovati per " + callsignInput);
-                return;
+                mess.append("📡 *DATI RADAR LIVE*\n");
+                mess.append("• Altitudine: ").append(liveData.alt_baro != null ? liveData.alt_baro : "N/D").append(" ft\n");
+                mess.append("• Velocità: ").append(liveData.gs != null ? liveData.gs : 0).append(" kt\n");
+                mess.append("• Latitudine: ").append(liveData.lat != null ? liveData.lat : "N/D").append("\n");
+                mess.append("• Longitudine: ").append(liveData.lon != null ? liveData.lon : "N/D").append("\n");
+                String emergency = (liveData.emergency != null) ? liveData.emergency : "none";
+                if (!emergency.equals("none")) {
+                    mess.append("• STATO EMERGENZA: ").append(emergency).append("\n");
+                }
             }
 
-            if (photoUrl != null && !photoUrl.isEmpty()) {
-                sb.append("\n*🖼 FOTO DELL'AEREO* [\u200E](").append(photoUrl).append(")"); // Link associato ad un carattere vuoto
+            if (mess.length() == 0) {
+                sendText(chatId, "❌ Nessun dato trovato per il callsign " + callsignInput);
+            } else {
+                if (photoUrl != null) {
+                    mess.insert(0, "[\u200E](" + photoUrl + ")"); // Associo il link ad un carattere vuoto
+                }
+                sendText(chatId, mess.toString());
             }
-
-            sendText(chatId, sb.toString());
 
         } catch (Exception e) {
             e.printStackTrace();
-            sendText(chatId, "⚠️ Errore durante il recupero dei dettagli.");
+            sendText(chatId, "⚠️ Errore durante la ricerca.");
         }
     }
-
     private String chiamataAPI(String url) throws IOException, InterruptedException {
         HttpRequest request = HttpRequest.newBuilder()
                 .uri(URI.create(url))
