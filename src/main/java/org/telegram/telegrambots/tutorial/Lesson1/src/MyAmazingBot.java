@@ -270,7 +270,6 @@ public class MyAmazingBot implements LongPollingSingleThreadUpdateConsumer {
         }
     }
 
-
     private String chiamataAPI(String url) throws IOException, InterruptedException {
         HttpRequest request = HttpRequest.newBuilder()
                 .uri(URI.create(url))
