@@ -17,6 +17,8 @@ import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
 import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
+import java.time.LocalTime;
+import java.time.format.DateTimeFormatter;
 import java.util.List;
 
 public class MyAmazingBot implements LongPollingSingleThreadUpdateConsumer {
@@ -39,23 +41,28 @@ public class MyAmazingBot implements LongPollingSingleThreadUpdateConsumer {
     public void consume(Update update) {
         if (update.hasMessage() && update.getMessage().hasText()) {
             long chatId = update.getMessage().getChatId();
-            String text = update.getMessage().getText().trim();
+            String messaggio = update.getMessage().getText().trim();
             String nomeUtente = update.getMessage().getFrom().getFirstName();
+            String username = update.getMessage().getFrom().getUserName();
+
+            StringBuilder sout = new StringBuilder();
+            sout.append("[" + username + "] " + messaggio);
+            System.out.println(sout);
 
             try {
-                if (text.equals("/start")) {
+                if (messaggio.equals("/start")) {
                     sendText(chatId, "👋 Ehilà "+ nomeUtente + ", benvenuto su Flightrack! Per iniziare, scrivi il nome della città o del luogo che vuoi monitorare.");
                     return;
                 }
 
                 if (luogo.isEmpty()) {
-                    float[] coords = coordinate(text);
+                    float[] coords = coordinate(messaggio);
                     if (coords != null) {
-                        if(text.equals("/voli")) {
+                        if(messaggio.equals("/voli")) {
                             sendText(chatId, "⚠️ Non hai ancora configurato il bot! Digita /start per iniziare.");
                             return;
                         }
-                        luogo = text;
+                        luogo = messaggio;
                         sendText(chatId, "📍 Perfetto! Ho impostato " + primaLetteraMaiuscola(luogo) + " (" + coords[0] + ", " + coords[1] + ") come luogo da monitorare.\n\nOra dimmi, quanti chilometri di raggio vuoi coprire? (Scrivi solo il numero, es: 50)");
                     } else {
                         sendText(chatId, "❌ Non ho trovato questo posto. Riprova usando un altro nome!");
@@ -65,7 +72,7 @@ public class MyAmazingBot implements LongPollingSingleThreadUpdateConsumer {
 
                 try {
                     if (raggio <= 0) {
-                        int raggioUtente = Integer.parseInt(text);
+                        int raggioUtente = Integer.parseInt(messaggio);
                         if (Double.isNaN(raggioUtente) || raggioUtente < 0) {
                             sendText(chatId, "❌ Inserisci un raggio valido!");
                             return;
@@ -78,7 +85,7 @@ public class MyAmazingBot implements LongPollingSingleThreadUpdateConsumer {
                     sendText(chatId, "❌ Inserisci un numero valido per il raggio!");
                 }
 
-                if (text.startsWith("/voli")) {
+                if (messaggio.startsWith("/voli")) {
                     if (luogo.isEmpty() || raggio == 0) {
                         sendText(chatId, "⚠️ Non hai ancora configurato il bot! Digita /start per iniziare.");
                         return;
@@ -103,8 +110,8 @@ public class MyAmazingBot implements LongPollingSingleThreadUpdateConsumer {
                     sendText(chatId, sb.toString());
                 }
 
-                if (text.startsWith("/info")) {
-                    String[] parti = text.split("\\s+"); // Stringa divisa per spazi
+                if (messaggio.startsWith("/info")) {
+                    String[] parti = messaggio.split("\\s+"); // Stringa divisa per spazi
 
                     if (parti.length == 1) {
                         sendText(chatId, "✈️ Di quale volo vuoi conoscere i dettagli? Scrivi il comando nel formato /info <volo> (es: /info NOS6508)");
@@ -114,8 +121,8 @@ public class MyAmazingBot implements LongPollingSingleThreadUpdateConsumer {
                     }
                 }
 
-                if (text.startsWith("/luogo")) {
-                    String[] parti = text.split("\\s+", 2);
+                if (messaggio.startsWith("/luogo")) {
+                    String[] parti = messaggio.split("\\s+", 2);
 
                     if (parti.length == 1) {
                         sendText(chatId, "🗺️ Quale luogo vorresti monitorare? Scrivi il comando nel formato /luogo <luogo> (es: /luogo Roma)");
@@ -136,8 +143,8 @@ public class MyAmazingBot implements LongPollingSingleThreadUpdateConsumer {
                     return;
                 }
 
-                if (text.startsWith("/raggio")) {
-                    String[] parti = text.split("\\s+", 2);
+                if (messaggio.startsWith("/raggio")) {
+                    String[] parti = messaggio.split("\\s+", 2);
 
                     if (parti.length == 1) {
                         sendText(chatId, "📏 Che raggio di copertura vorresti usare? Scrivi il comando nel formato /raggio <raggio> (es: /raggio 70)");
@@ -327,6 +334,7 @@ public class MyAmazingBot implements LongPollingSingleThreadUpdateConsumer {
         }
         return null;
     }
+
 
     public static String primaLetteraMaiuscola(String input) {
         return input.substring(0, 1).toUpperCase() + input.substring(1);

@@ -12,8 +12,9 @@ public class Main {
 //        Scanner sc = new Scanner(System.in);
 //        botToken = sc.next(); // Momentaneamente...
 //        sc.close();
+        final ConfigLoader cl = new ConfigLoader();
         TelegramBotsLongPollingApplication botsApplication = new TelegramBotsLongPollingApplication();
-        botsApplication.registerBot("8265336333:AAHjrFTDfbZRln0b0m1NFKvPGGuimgswXFs", new MyAmazingBot("8265336333:AAHjrFTDfbZRln0b0m1NFKvPGGuimgswXFs"));
+        botsApplication.registerBot(cl.getProperty("BOT_TOKEN"), new MyAmazingBot(cl.getProperty("BOT_TOKEN")));
         System.out.println("Il bot è attivo!");
     }
 }
