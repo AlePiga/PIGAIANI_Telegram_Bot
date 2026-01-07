@@ -212,7 +212,7 @@ public class MyAmazingBot implements LongPollingSingleThreadUpdateConsumer {
                     mess.append("• Modello: ").append(man).append(" ").append(type).append("\n");
 
                     mess.append("• Registrazione: `").append(ac.get("registration").getAsString()).append("`\n");
-                    mess.append("• Codice HEX: `").append(ac.get("mode_s").getAsString()).append("`\n\n");
+                        mess.append("• Codice HEX: `").append(ac.get("mode_s").getAsString()).append("`\n\n");
 
                     if (ac.has("url_photo") && !ac.get("url_photo").isJsonNull()) {
                         photoUrl = ac.get("url_photo").getAsString();
@@ -230,6 +230,10 @@ public class MyAmazingBot implements LongPollingSingleThreadUpdateConsumer {
                     if (fr.has("destination") && !fr.get("destination").isJsonNull()) {
                         JsonObject d = fr.getAsJsonObject("destination");
                         mess.append("• Arrivo: ").append(d.get("municipality").getAsString()).append(" (").append(d.get("iata_code").getAsString()).append(") ").append(d.get("name").getAsString()).append("\n");
+                    }
+                    if (fr.has("airline") && !fr.get("airline").isJsonNull()) {
+                        JsonObject a = fr.getAsJsonObject("airline");
+                        mess.append("• Compagnia: ").append(a.get("name").getAsString()).append(" (").append(a.get("icao").getAsString()).append(") ").append("\n");
                     }
                     mess.append("\n");
                 }
