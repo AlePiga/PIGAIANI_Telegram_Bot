@@ -16,7 +16,7 @@ public class Bot implements LongPollingSingleThreadUpdateConsumer {
     private final TelegramClient telegramClient;
     private final API api = new API();
     private final Gson gson = new Gson();
-    private final Database db = new Database(); // Inizializza DB
+    private final Database db = new Database();
     private Map<Long, UserSession> sessions = new ConcurrentHashMap<>();
 
     public Bot(String botToken) {
