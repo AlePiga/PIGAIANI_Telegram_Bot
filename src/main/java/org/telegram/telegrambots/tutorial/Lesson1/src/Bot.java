@@ -38,32 +38,47 @@ public class Bot implements LongPollingSingleThreadUpdateConsumer {
 
             try {
                 if (user.attesa && !messsaggio.startsWith("/")) {
-                    user.attesa = false;
 
                     switch (user.tipoAttesa) {
                         case "INFO":
-                            sendText(chatId, api.cercaDettagliVolo(messsaggio.toUpperCase()));
+                            String callsignInput = messsaggio.toUpperCase().trim();
+                            if (!callsignInput.matches("^[A-Z0-9]{3,8}$")) {
+                                sendText(chatId, "❌ Codice volo non valido!");
+                                return;
+                            }
+                            user.attesa = false;
+                            sendText(chatId, api.cercaDettagliVolo(callsignInput));
                             break;
 
                         case "LUOGO":
-                            // riusa la tua logica di ottieniCoordinate
                             float[] coords = api.ottieniCoordinate(messsaggio);
                             if (coords != null) {
+                                user.attesa = false; // Luogo trovato, resetto l'attesa
                                 user.luogo = messsaggio;
                                 user.latitudine = coords[0];
                                 user.longitudine = coords[1];
-                                sendText(chatId, "✅ Luogo aggiornato: [" + Format.primaLetteraMaiuscola(user.luogo) + "](https://www.google.com/maps?q=" + coords[0] + "," + coords[1] + ")\n\n");                            } else {
-                                sendText(chatId, "❌ Luogo non valido.");
+                                sendText(chatId, "✅ Luogo aggiornato: [" + Format.primaLetteraMaiuscola(user.luogo) + "](https://www.google.com/maps?q=" + coords[0] + "," + coords[1] + ")\n\n");
+                            } else {
+                                sendText(chatId, "❌ Non ho trovato questo posto. Riprova usando un altro nome!");
                             }
                             break;
 
                         case "RAGGIO":
                             try {
                                 int r = Integer.parseInt(messsaggio);
+                                if (r <= 0) {
+                                    sendText(chatId, "⚠️ Inserisci un numero positivo!");
+                                    return;
+                                } else if (r > 150) {
+                                    sendText(chatId, "⚠️ Raggio troppo grande!");
+                                    return;
+                                }
+
+                                user.attesa = false; // Raggio valido, resetto l'attesa
                                 user.raggio = r;
                                 sendText(chatId, "✅ Raggio aggiornato a " + r + " km.");
                             } catch (NumberFormatException e) {
-                                sendText(chatId, "❌ Inserisci un numero valido.");
+                                sendText(chatId, "❌ Inserisci un numero valido!");
                             }
                             break;
                     }
@@ -209,13 +224,17 @@ public class Bot implements LongPollingSingleThreadUpdateConsumer {
                     try {
                         int nuovoRaggio = Integer.parseInt(parti[1].trim());
                         if (nuovoRaggio <= 0) {
-                            sendText(chatId, "⚠️ Inserisci un numero positivo.");
+                            sendText(chatId, "⚠️ Inserisci un numero positivo!");
+                            return;
+                        }
+                        else if (nuovoRaggio > 150) {
+                            sendText(chatId, "⚠️ Raggio troppo grande!");
                             return;
                         }
                         user.raggio = nuovoRaggio;
                         sendText(chatId, "✅ Raggio aggiornato a " + user.raggio + " km.");
                     } catch (NumberFormatException e) {
-                        sendText(chatId, "⚠️ Il raggio deve essere un numero (es: 50).");
+                        sendText(chatId, "❌ Inserisci un numero valido!");
                     }
                 }
 
