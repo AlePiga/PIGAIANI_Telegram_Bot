@@ -73,7 +73,7 @@ public class Bot implements LongPollingSingleThreadUpdateConsumer {
                                     sendText(chatId, "⚠️ Raggio troppo grande!");
                                     return;
                                 }
-//SLEEEEEEEEEEEEEEEEEPPPPPPPPPPPPYYYYYYYYYYYYYYYYHHHHHHHHHHHHHHHHEEEEEEEEEEEEEEAAAAAAAAAAAAAAAAAADDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDD
+                                // sleepyhead
                                 user.attesa = false; // Raggio valido, resetto l'attesa
                                 user.raggio = r;
                                 sendText(chatId, "✅ Raggio aggiornato a " + r + " km.");
