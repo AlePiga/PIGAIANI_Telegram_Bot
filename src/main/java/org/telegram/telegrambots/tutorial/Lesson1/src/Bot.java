@@ -16,10 +16,12 @@ public class Bot implements LongPollingSingleThreadUpdateConsumer {
     private final TelegramClient telegramClient;
     private final API api = new API();
     private final Gson gson = new Gson();
-    private final Map<Long, UserSession> sessions = new ConcurrentHashMap<>();
+    private final Database db = new Database(); // Inizializza DB
+    private Map<Long, UserSession> sessions = new ConcurrentHashMap<>();
 
     public Bot(String botToken) {
         telegramClient = new OkHttpTelegramClient(botToken);
+        this.sessions = db.loadSessions();
     }
 
     @Override
@@ -47,6 +49,7 @@ public class Bot implements LongPollingSingleThreadUpdateConsumer {
                                 return;
                             }
                             user.attesa = false;
+                            db.aggiungiVolo(user.chatId, callsignInput);
                             sendText(chatId, api.cercaDettagliVolo(callsignInput));
                             break;
 
@@ -58,6 +61,7 @@ public class Bot implements LongPollingSingleThreadUpdateConsumer {
                                 user.latitudine = coords[0];
                                 user.longitudine = coords[1];
                                 sendText(chatId, "✅ Luogo aggiornato: [" + Format.primaLetteraMaiuscola(user.luogo) + "](https://www.google.com/maps?q=" + coords[0] + "," + coords[1] + ")\n\n");
+                                db.saveUpdateUser(user);
                             } else {
                                 sendText(chatId, "❌ Non ho trovato questo posto. Riprova usando un altro nome!");
                             }
@@ -73,10 +77,10 @@ public class Bot implements LongPollingSingleThreadUpdateConsumer {
                                     sendText(chatId, "⚠️ Raggio troppo grande!");
                                     return;
                                 }
-                                // sleepyhead
-                                user.attesa = false; // Raggio valido, resetto l'attesa
+                                user.attesa = false;
                                 user.raggio = r;
                                 sendText(chatId, "✅ Raggio aggiornato a " + r + " km.");
+                                db.saveUpdateUser(user);
                             } catch (NumberFormatException e) {
                                 sendText(chatId, "❌ Inserisci un numero valido!");
                             }
@@ -86,6 +90,10 @@ public class Bot implements LongPollingSingleThreadUpdateConsumer {
                 }
 
                 if (messsaggio.equals("/start")) {
+                    user.luogo = "";
+                    user.raggio = 0;
+                    user.attesa = false;
+                    user.tipoAttesa = "";
                     sendText(chatId, "👋 Ehilà "+ user.firstName + ", benvenuto su Flightrack! Per iniziare, scrivi il nome della città o del luogo che vuoi monitorare.");
                     return;
                 }
@@ -134,6 +142,7 @@ public class Bot implements LongPollingSingleThreadUpdateConsumer {
                         }
                         user.raggio = raggioUtente;
                         sendText(chatId, "*CONFIGURAZIONE COMPLETATA*\n" + "🗺️ Luogo: " + Format.primaLetteraMaiuscola(user.luogo) + "\n" + "📏 Raggio: " + user.raggio + " km\n\n" + "Usa il comando /voli per tracciare gli aerei nella zona che hai selezionato! Per cambiare i parametri impostati puoi usare i comandi /luogo e /raggio, oppure /start per eseguire la configurazione da capo. Buon divertimento!");
+                        db.saveUpdateUser(user);
                         return;
                     } catch (NumberFormatException e) {
                         sendText(chatId, "❌ Inserisci un numero valido per il raggio!");
@@ -175,6 +184,7 @@ public class Bot implements LongPollingSingleThreadUpdateConsumer {
                         sendText(chatId, "✈️ Di quale volo vuoi conoscere i dettagli? Inviami il callsign!");
                     } else {
                         String callsign = parti[1].toUpperCase();
+                        db.aggiungiVolo(user.chatId, callsign);
                         sendText(chatId, api.cercaDettagliVolo(callsign));
                     }
                     return;
@@ -195,6 +205,7 @@ public class Bot implements LongPollingSingleThreadUpdateConsumer {
                         user.luogo = nuovoLuogo;
                         user.latitudine = coords[0];
                         user.longitudine = coords[1];
+                        db.saveUpdateUser(user);
                         try {
                             SendMessage message = SendMessage.builder()
                                     .chatId(chatId)
@@ -204,6 +215,7 @@ public class Bot implements LongPollingSingleThreadUpdateConsumer {
                                     .build();
 
                             telegramClient.execute(message);
+                            db.saveUpdateUser(user);
                         } catch (TelegramApiException e) {
                             e.printStackTrace();
                         }
@@ -233,6 +245,7 @@ public class Bot implements LongPollingSingleThreadUpdateConsumer {
                         }
                         user.raggio = nuovoRaggio;
                         sendText(chatId, "✅ Raggio aggiornato a " + user.raggio + " km.");
+                        db.saveUpdateUser(user);
                     } catch (NumberFormatException e) {
                         sendText(chatId, "❌ Inserisci un numero valido!");
                     }

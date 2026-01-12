@@ -15,6 +15,6 @@ public class Main {
         final ConfigLoader cl = new ConfigLoader();
         TelegramBotsLongPollingApplication botsApplication = new TelegramBotsLongPollingApplication();
         botsApplication.registerBot(cl.getProperty("BOT_TOKEN"), new Bot(cl.getProperty("BOT_TOKEN")));
-        System.out.println("\u001B[1;32mIl bot è attivo!\u001B[0m");
+        System.out.println("\u001B[1;32mBot attivo!\u001B[0m");
     }
 }
