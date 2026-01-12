@@ -10,7 +10,7 @@ public class ConfigLoader {
     public ConfigLoader() {
         try (InputStream input = getClass().getClassLoader().getResourceAsStream("config.properties")) {
             if (input == null) {
-                System.out.println("Non riesco a trovare config.properties!");
+                System.out.println("\\u001B[33mNon riesco a trovare config.properties!\\u001B[33m");
                 return;
             }
             properties.load(input);
