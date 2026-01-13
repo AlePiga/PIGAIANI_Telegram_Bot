@@ -141,7 +141,7 @@ public class Bot implements LongPollingSingleThreadUpdateConsumer {
                             return;
                         }
                         user.raggio = raggioUtente;
-                        sendText(chatId, "*CONFIGURAZIONE COMPLETATA*\n" + "🗺️ Luogo: " + Format.primaLetteraMaiuscola(user.luogo) + "\n" + "📏 Raggio: " + user.raggio + " km\n\n" + "Usa il comando /voli per tracciare gli aerei nella zona che hai selezionato! Per cambiare i parametri impostati puoi usare i comandi /luogo e /raggio, oppure /start per eseguire la configurazione da capo. Buon divertimento!");
+                        sendText(chatId, "*CONFIGURAZIONE COMPLETATA*\n" + "🗺️ Luogo: " + Format.primaLetteraMaiuscola(user.luogo) + "\n" + "📏 Raggio: " + user.raggio + " km\n\n" + "Usa il comando /voli per caricare la lista degli aerei nella zona che hai selezionato! Per cambiare i parametri impostati puoi usare i comandi /luogo e /raggio, mentre per scoprire più informazioni su un volo puoi usare /info. Buon divertimento!");
                         db.saveUpdateUser(user);
                         return;
                     } catch (NumberFormatException e) {
