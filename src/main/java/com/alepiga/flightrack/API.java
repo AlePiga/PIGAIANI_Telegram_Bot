@@ -1,4 +1,4 @@
-package org.telegram.telegrambots.tutorial.Lesson1.src;
+package com.alepiga.flightrack;
 
 import com.google.gson.Gson;
 import com.google.gson.JsonArray;

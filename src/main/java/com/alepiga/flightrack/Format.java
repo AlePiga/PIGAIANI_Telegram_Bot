@@ -1,4 +1,4 @@
-package org.telegram.telegrambots.tutorial.Lesson1.src;
+package com.alepiga.flightrack;
 
 public class Format {
     public static String primaLetteraMaiuscola(String input) {

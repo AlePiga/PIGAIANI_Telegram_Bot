@@ -1,9 +1,7 @@
-package org.telegram.telegrambots.tutorial.Lesson1.src;
+package com.alepiga.flightrack;
 
 import org.telegram.telegrambots.longpolling.TelegramBotsLongPollingApplication;
 import org.telegram.telegrambots.meta.exceptions.TelegramApiException;
-
-import java.util.Scanner;
 
 public class Main {
     public static void main(String[] args) throws TelegramApiException {

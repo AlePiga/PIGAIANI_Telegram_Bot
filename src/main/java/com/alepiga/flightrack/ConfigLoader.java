@@ -1,4 +1,4 @@
-package org.telegram.telegrambots.tutorial.Lesson1.src;
+package com.alepiga.flightrack;
 
 import java.io.IOException;
 import java.io.InputStream;
