@@ -30,7 +30,7 @@ public class API {
             String encoded = URLEncoder.encode(location, StandardCharsets.UTF_8);
             String url = "https://nominatim.openstreetmap.org/search?q=" + encoded + "&format=json&limit=1";
             JsonArray jsonArray = gson.fromJson(chiamataAPI(url), JsonArray.class);
-            if (jsonArray.size() > 0) {
+            if (!jsonArray.isEmpty()) {
                 JsonObject obj = jsonArray.get(0).getAsJsonObject();
                 return new float[]{obj.get("lat").getAsFloat(), obj.get("lon").getAsFloat()};
             }
@@ -115,10 +115,10 @@ public class API {
                 }
             }
 
-            if (mess.length() == 0) {
+            if (mess.isEmpty()) {
                 return "❌ Nessun dato trovato per il callsign " + callsignInput;
             } else {
-                if (photoUrl != null && photoUrl.length() > 0) {
+                if (photoUrl != null && photoUrl.isEmpty()) {
                     mess.append("\n📸 *FOTO DELL'AEROMOBILE*\n");
                     mess.insert(0, "[\u200E](" + photoUrl + ")"); // Associo il link ad un carattere vuoto
                 }
