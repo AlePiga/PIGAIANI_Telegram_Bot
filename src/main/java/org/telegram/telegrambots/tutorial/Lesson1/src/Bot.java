@@ -112,7 +112,7 @@ public class Bot implements LongPollingSingleThreadUpdateConsumer {
                         try {
                             SendMessage message = SendMessage.builder()
                                     .chatId(chatId)
-                                    .text("📍 Perfetto! Ho impostato [" + Format.primaLetteraMaiuscola(user.luogo) + "](https://www.google.com/maps?q=" + user.latitudine + "," + user.longitudine + ") come luogo da monitorare.\n\n"
+                                    .text("📍 Perfetto! Ho impostato [" + Format.primaLetteraMaiuscola(user.luogo) + "](https://www.google.com/maps?q=" + user.latitudine + "," + user.longitudine + ") come luogo da monitorare.\n"
                                             + "📏 Ora dimmi, quanti chilometri di raggio vuoi coprire?\n"
                                             + "(Scrivi solo il numero, es: 50)")
                                     .parseMode("Markdown")

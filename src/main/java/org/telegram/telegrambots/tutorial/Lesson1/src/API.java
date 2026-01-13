@@ -42,20 +42,23 @@ public class API {
         callsignInput = callsignInput.trim().toUpperCase();
 
         if (!callsignInput.matches("^[A-Z0-9]{3,8}$")) {
-            return  "⚠️ Callsign non valido!";
+            return "⚠️ Callsign non valido!";
         }
 
         try {
+            StringBuilder mess = new StringBuilder();
+            String photoUrl = null;
+
             String radarUrl = "https://api.adsb.lol/v2/callsign/" + callsignInput;
             String rispostaRadar = chiamataAPI(radarUrl);
             Flightlist radarJson = gson.fromJson(rispostaRadar, Flightlist.class);
 
-            String hex = null;
             Flight liveData = null;
+            String hex = null;
 
             if (radarJson != null && radarJson.ac != null && !radarJson.ac.isEmpty()) {
                 liveData = radarJson.ac.get(0);
-                hex = liveData.hex;
+                hex = liveData != null ? liveData.hex : null;
             }
 
             String urlDb = (hex != null)
@@ -63,42 +66,55 @@ public class API {
                     : "https://api.adsbdb.com/v0/callsign/" + callsignInput;
 
             String rispostaDb = chiamataAPI(urlDb);
-            JsonObject rootDb = gson.fromJson(rispostaDb, JsonObject.class); // Risposta dell'API in json invece che usare classe
+            JsonObject rootDb = gson.fromJson(rispostaDb, JsonObject.class);
 
-            StringBuilder mess = new StringBuilder();
-            String photoUrl = "";
-
-            if (valido(rootDb, "response")) {
+            if (rootDb != null && rootDb.has("response") && rootDb.get("response").isJsonObject()) {
                 JsonObject resp = rootDb.getAsJsonObject("response");
 
-                if (resp.has("aircraft") && !resp.get("aircraft").isJsonNull()) {
+                if (resp.has("aircraft") && resp.get("aircraft").isJsonObject()) {
                     JsonObject ac = resp.getAsJsonObject("aircraft");
+
                     mess.append("🛩 *DETTAGLI AEROMOBILE*\n");
 
                     String man = ac.has("manufacturer") ? ac.get("manufacturer").getAsString() : "N/D";
                     String type = ac.has("type") ? ac.get("type").getAsString() : "";
                     mess.append("• Modello: ").append(man).append(" ").append(type).append("\n");
 
-                    mess.append("• Registrazione: `").append(ac.get("registration").getAsString()).append("`\n");
-                    mess.append("• Codice HEX: `").append(ac.get("mode_s").getAsString()).append("`\n\n");
+                    if (ac.has("registration"))
+                        mess.append("• Registrazione: `").append(ac.get("registration").getAsString()).append("`\n");
+
+                    if (ac.has("mode_s"))
+                        mess.append("• Codice HEX: `").append(ac.get("mode_s").getAsString()).append("`\n");
+
+                    mess.append("\n");
 
                     if (ac.has("url_photo") && !ac.get("url_photo").isJsonNull()) {
                         photoUrl = ac.get("url_photo").getAsString();
                     }
                 }
 
-                if (resp.has("flightroute") && !resp.get("flightroute").isJsonNull()) {
+                if (resp.has("flightroute") && resp.get("flightroute").isJsonObject()) {
                     JsonObject fr = resp.getAsJsonObject("flightroute");
                     mess.append("ℹ️ *INFORMAZIONI VOLO*\n");
 
-                    if (fr.has("origin") && !fr.get("origin").isJsonNull()) {
+                    if (fr.has("origin") && fr.get("origin").isJsonObject()) {
                         JsonObject o = fr.getAsJsonObject("origin");
-                        mess.append("• Partenza: ").append(o.get("municipality").getAsString()).append(" (").append(o.get("iata_code").getAsString()).append(") ").append(o.get("name").getAsString()).append("\n");
+                        mess.append("• Partenza: ")
+                                .append(o.has("municipality") ? o.get("municipality").getAsString() : "N/D")
+                                .append(" (")
+                                .append(o.has("iata_code") ? o.get("iata_code").getAsString() : "?")
+                                .append(")\n");
                     }
-                    if (fr.has("destination") && !fr.get("destination").isJsonNull()) {
+
+                    if (fr.has("destination") && fr.get("destination").isJsonObject()) {
                         JsonObject d = fr.getAsJsonObject("destination");
-                        mess.append("• Arrivo: ").append(d.get("municipality").getAsString()).append(" (").append(d.get("iata_code").getAsString()).append(") ").append(d.get("name").getAsString()).append("\n");
+                        mess.append("• Arrivo: ")
+                                .append(d.has("municipality") ? d.get("municipality").getAsString() : "N/D")
+                                .append(" (")
+                                .append(d.has("iata_code") ? d.get("iata_code").getAsString() : "?")
+                                .append(")\n");
                     }
+
                     mess.append("\n");
                 }
             }
@@ -106,30 +122,32 @@ public class API {
             if (liveData != null) {
                 mess.append("📡 *DATI RADAR LIVE*\n");
                 mess.append("• Altitudine: ").append(liveData.alt_baro != null ? liveData.alt_baro : "N/D").append(" ft\n");
-                mess.append("• Velocità: ").append(liveData.gs != null ? liveData.gs : 0).append(" kt\n");
+                mess.append("• Velocità: ").append(liveData.gs != null ? liveData.gs : "N/D").append(" kt\n");
                 mess.append("• Latitudine: ").append(liveData.lat != null ? liveData.lat : "N/D").append("\n");
                 mess.append("• Longitudine: ").append(liveData.lon != null ? liveData.lon : "N/D").append("\n");
-                String emergency = (liveData.emergency != null) ? liveData.emergency : "none";
-                if (!emergency.equals("none")) {
-                    mess.append("• STATO EMERGENZA: ").append(emergency).append("\n");
+
+                if (liveData.emergency != null && !"none".equals(liveData.emergency)) {
+                    mess.append("• 🚨 EMERGENZA: ").append(liveData.emergency).append("\n");
                 }
             }
 
             if (mess.isEmpty()) {
                 return "❌ Nessun dato trovato per il callsign " + callsignInput;
-            } else {
-                if (photoUrl != null && photoUrl.isEmpty()) {
-                    mess.append("\n📸 *FOTO DELL'AEROMOBILE*\n");
-                    mess.insert(0, "[\u200E](" + photoUrl + ")"); // Associo il link ad un carattere vuoto
-                }
-                return mess.toString();
             }
+
+            if (photoUrl != null && !photoUrl.isEmpty()) {
+                mess.insert(0, "[\u200E](" + photoUrl + ")");
+                mess.append("\n📸 *FOTO DELL'AEROMOBILE*");
+            }
+
+            return mess.toString();
 
         } catch (Exception e) {
             e.printStackTrace();
             return "⚠️ Errore durante la ricerca!";
         }
     }
+
 
     String ottieniVoli(String callsign) {
         try {
