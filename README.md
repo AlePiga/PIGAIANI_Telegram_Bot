@@ -48,7 +48,7 @@ Per funzionare, FlightTrack Bot utilizza alcune API esterne:
 
 Assicurati di avere:
 
-* Java 11 o superiore
+* Java 21 o superiore
 * Maven
 
 ---
